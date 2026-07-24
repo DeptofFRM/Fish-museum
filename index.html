@@ -148,8 +148,9 @@ function splitLine(line) {
 }
 
 function getVal(row, candidates) {
+  if (!candidates || !Array.isArray(candidates)) return "";
   for (const c of candidates) {
-    const key = Object.keys(row).find(k => k.trim().toLowerCase() === c.toLowerCase());
+    const key = Object.keys(row).find(k => k.trim() === c.trim());
     if (key && row[key] && row[key].trim()) return row[key].trim();
   }
   return "";
