@@ -64,8 +64,8 @@
 /* ============================================================
    ✏️  EDIT ONLY THESE TWO LINES
    ============================================================ */
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIxl4KC8hG3jfqwbpaJVdgbtMV8x9gQyrh8caPql-yxr4AzeXKk1nveQqPjslyuYX7nPVtEMnxMcEa/pub?gid=420594097&single=true&output=csv";
-const BASE_URL      = "https://github.com/DeptofFRM/Fish-museum";
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq352kenIOG0RiBtCgt3LmFLD4bLP1QkTxZjpucDg5CZaqpJpbKOgJqaL5AyPW-osMgGmbRlojW9bL/pub?output=csv";
+const BASE_URL      = "https://github.com/Yogeshfins/fish-museum";
 
 /* ============================================================
    Column name mappings
@@ -264,9 +264,20 @@ async function boot() {
 
   let species = [];
   try {
-    const res = await fetch(SHEET_CSV_URL);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const rows = parseCSV(await res.text());
+    let csvText = null;
+    try {
+      const res = await fetch(SHEET_CSV_URL, {cache:"no-store"});
+      if (res.ok) csvText = await res.text();
+      else throw new Error("HTTP "+res.status);
+    } catch(corsErr) {
+      const proxy = "https://api.allorigins.win/raw?url="+encodeURIComponent(SHEET_CSV_URL);
+      const res2 = await fetch(proxy);
+      if (res2.ok) csvText = await res2.text();
+      else throw new Error("Proxy fetch failed");
+    }
+    if (!csvText || csvText.trim().length === 0) throw new Error("Empty response from sheet");
+    const rows = parseCSV(csvText);
+    console.log("Columns:", rows.length > 0 ? Object.keys(rows[0]) : "none");
     species = rows.map(row => ({
       timestamp:    getVal(row, COL.timestamp),   // read but not displayed
       commonName:   getVal(row, COL.commonName),
@@ -285,7 +296,8 @@ async function boot() {
       <div class="error-msg">
         <b>Could not load species data.</b><br>
         Error: ${e.message}<br><br>
-        Check that your Sheet is published as CSV and publicly accessible.
+        Make sure your Sheet is published as CSV and publicly accessible.<br><br>
+        <a href="${SHEET_CSV_URL}" target="_blank" style="color:#f4b4b4;font-size:12px;">Test sheet URL ↗</a>
       </div>`;
     return;
   }
